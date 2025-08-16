@@ -1,22 +1,17 @@
-import fs from "fs"
-import { parse } from "yaml"
+import fs from "fs/promises";
+import { parse } from "yaml";
+import { rootConfigSchema } from "./config_schema";
 
 const parseYAMLConfig = async (filepath: string) => {
-    fs.readFile(filepath, 'utf-8', (err, data) => {
-        if (err) {
-            console.log("Error in reading the yml file: ", err)
-        } else {
-            console.log(data)
-            const result = parse(data)
-            const final_result = JSON.stringify(result)
-            console.log(final_result)
-            return final_result
-        }
-    })
-}
+    const data = await fs.readFile(filepath, "utf-8");
+    const result = parse(data);
+    console.log("result: ", result)
+    return JSON.stringify(result);
+};
 
 const validateConfig = async (config: string) => {
-    
-}
+    const validatiorConfig = await rootConfigSchema.parseAsync(JSON.parse(config));
+    return validatiorConfig;
+};
 
-export { parseYAMLConfig }
+export { parseYAMLConfig, validateConfig };

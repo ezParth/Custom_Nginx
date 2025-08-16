@@ -1,4 +1,4 @@
-import { string, z } from "zod"
+import { z } from "zod"
 
 const upstreamSchema = z.object({
     id: z.string(),
@@ -20,8 +20,9 @@ const serverSchema = z.object({
     workers: z.number().optional(),
     upstream: z.array(upstreamSchema),
     headers: z.array(headerSchema).optional,
+    rules: z.array(ruleSchema),
 })
 
-const rootConfigSchema = z.object({
+export const rootConfigSchema = z.object({
     server: serverSchema
 })

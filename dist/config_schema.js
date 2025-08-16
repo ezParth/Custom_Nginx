@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.rootConfigSchema = void 0;
 const zod_1 = require("zod");
 const upstreamSchema = zod_1.z.object({
     id: zod_1.z.string(),
@@ -18,7 +19,8 @@ const serverSchema = zod_1.z.object({
     workers: zod_1.z.number().optional(),
     upstream: zod_1.z.array(upstreamSchema),
     headers: zod_1.z.array(headerSchema).optional,
+    rules: zod_1.z.array(ruleSchema),
 });
-const rootConfigSchema = zod_1.z.object({
+exports.rootConfigSchema = zod_1.z.object({
     server: serverSchema
 });

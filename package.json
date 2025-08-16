@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node dist/server --config config.yml",
     "build": "tsc",
     "dev": "tsc-watch --onSuccess \"npm start\""
   },
@@ -17,6 +17,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "commander": "^14.0.0",
     "express": "^5.1.0",
     "tsc-watch": "^7.1.1",
     "yaml": "^2.8.1",
