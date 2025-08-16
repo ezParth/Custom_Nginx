@@ -1,1 +1,24 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const zod_1 = require("zod");
+const upstreamSchema = zod_1.z.object({
+    id: zod_1.z.string(),
+    url: zod_1.z.string().url(),
+});
+const headerSchema = zod_1.z.object({
+    key: zod_1.z.string(),
+    value: zod_1.z.string(),
+});
+const ruleSchema = zod_1.z.object({
+    path: zod_1.z.string(),
+    upstrams: zod_1.z.array(zod_1.z.string()),
+});
+const serverSchema = zod_1.z.object({
+    listen: zod_1.z.number(),
+    workers: zod_1.z.number().optional(),
+    upstream: zod_1.z.array(upstreamSchema),
+    headers: zod_1.z.array(headerSchema).optional,
+});
+const rootConfigSchema = zod_1.z.object({
+    server: serverSchema
+});
