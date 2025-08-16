@@ -1,0 +1,26 @@
+server:
+  listen: 8080
+  upstream:
+    - id: node1
+      url: http://localhost:8001
+
+    - id: node2
+      url: http://localhost:8002
+
+  headers: 
+    - key: x-forward-for
+      value: '$ip'
+
+    - key: Authorisation
+      value: 'Bearer xyz'
+
+  rules:
+    - path: /
+      upstrams:
+        - node1
+        - node2
+    
+    - path: /admin
+      upstram: 
+        - node2
+    
