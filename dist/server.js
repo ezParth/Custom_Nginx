@@ -62,6 +62,19 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
             // console.log("worker recieved a message: ", msg)
             const validatedMessage = yield server_schema_1.workerMessageSchema.parseAsync(JSON.parse(msg));
             console.log(validatedMessage);
+            const url = validatedMessage.url;
+            const rule = config.server.rules.filter(e => e.path == url);
+            if (!rule) {
+                const reply = {
+                    errorCode: "404",
+                    error: "Rule not found!"
+                };
+                const errorMessage = "Something is not good here!";
+                if (process.send)
+                    return process.send(JSON.stringify(reply));
+                else
+                    return errorMessage;
+            }
         }));
     }
 });

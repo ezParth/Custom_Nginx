@@ -4,7 +4,7 @@ import { program } from "commander";
 import cluster , { Worker } from "node:cluster";
 import os from "os"
 import http from "http"
-import { workerMessageSchema, workerMessageType } from "./server_schema";
+import { workerMessageReplyType, workerMessageSchema, workerMessageType } from "./server_schema";
 
 interface createServerConfig {
     port: number
@@ -63,6 +63,19 @@ const createServer = async (config: createServerConfig) => {
             // console.log("worker recieved a message: ", msg)
             const validatedMessage = await workerMessageSchema.parseAsync(JSON.parse(msg))
             console.log(validatedMessage)
+
+            const url: string = validatedMessage.url
+            const rule = config.server.rules.filter(e => e.path == url)
+
+            if(!rule) {
+                const reply: workerMessageReplyType = {
+                    errorCode: "404",
+                    error: "Rule not found!"
+                }
+                const errorMessage = "Something is not good here!"
+                if(process.send) return process.send(JSON.stringify(reply))
+                else return errorMessage
+            }
         })
     }
 }

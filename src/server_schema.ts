@@ -7,4 +7,11 @@ export const workerMessageSchema = z.object({
     url: z.string(),
 })
 
+export const workerMessageReplySchema = z.object({
+    data: z.string().optional(),
+    error: z.string().optional(),
+    errorCode: z.enum(['500', '404']),
+})
+
 export type workerMessageType = z.infer<typeof workerMessageSchema>
+export type workerMessageReplyType = z.infer<typeof workerMessageReplySchema>
