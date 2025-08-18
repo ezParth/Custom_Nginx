@@ -64,18 +64,45 @@ const createServer = async (config: createServerConfig) => {
             const validatedMessage = await workerMessageSchema.parseAsync(JSON.parse(msg))
             console.log(validatedMessage)
 
-            const url: string = validatedMessage.url
-            const rule = config.server.rules.filter(e => e.path == url)
+            const requestUrl: string = validatedMessage.url
+            const rule = config.server.rules.find(e => e.path == requestUrl)
 
             if(!rule) {
                 const reply: workerMessageReplyType = {
                     errorCode: "404",
                     error: "Rule not found!"
                 }
-                const errorMessage = "Something is not good here!"
+                const errorMessage = "Something is not good here, rule!"
                 if(process.send) return process.send(JSON.stringify(reply))
                 else return errorMessage
             }
+
+            const upstreamID = rule.upstreams[0]
+            const upstream = config.server.upstream.find(e => e.id === upstreamID)
+            if(!upstreamID) {
+                const reply: workerMessageReplyType = {
+                    errorCode: "500",
+                    error: "upstream not found!"
+                }
+                const errorMessage = "Something is not good here, upstram!"
+                if(process.send) return process.send(JSON.stringify(reply))
+                else return errorMessage
+            }
+
+            http.request({host: upstream?.url, path: requestUrl}, (proxyRes) => {
+                let body = ''
+                proxyRes.on('data', (a) => {
+                    body += a
+                })
+
+                proxyRes.on('data', () => {
+                    const reply: workerMessageReplyType = {
+                        data: body
+                    }
+
+                    if(process.send) process.send(JSON.stringify(reply))
+                })
+            })
         })
     }
 }

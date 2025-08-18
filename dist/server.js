@@ -62,19 +62,45 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
             // console.log("worker recieved a message: ", msg)
             const validatedMessage = yield server_schema_1.workerMessageSchema.parseAsync(JSON.parse(msg));
             console.log(validatedMessage);
-            const url = validatedMessage.url;
-            const rule = config.server.rules.filter(e => e.path == url);
+            const requestUrl = validatedMessage.url;
+            const rule = config.server.rules.find(e => e.path == requestUrl);
             if (!rule) {
                 const reply = {
                     errorCode: "404",
                     error: "Rule not found!"
                 };
-                const errorMessage = "Something is not good here!";
+                const errorMessage = "Something is not good here, rule!";
                 if (process.send)
                     return process.send(JSON.stringify(reply));
                 else
                     return errorMessage;
             }
+            const upstreamID = rule.upstreams[0];
+            const upstream = config.server.upstream.find(e => e.id === upstreamID);
+            if (!upstreamID) {
+                const reply = {
+                    errorCode: "500",
+                    error: "upstream not found!"
+                };
+                const errorMessage = "Something is not good here, upstram!";
+                if (process.send)
+                    return process.send(JSON.stringify(reply));
+                else
+                    return errorMessage;
+            }
+            http_1.default.request({ host: upstream === null || upstream === void 0 ? void 0 : upstream.url, path: requestUrl }, (proxyRes) => {
+                let body = '';
+                proxyRes.on('data', (a) => {
+                    body += a;
+                });
+                proxyRes.on('data', () => {
+                    const reply = {
+                        data: body
+                    };
+                    if (process.send)
+                        process.send(JSON.stringify(reply));
+                });
+            });
         }));
     }
 });
