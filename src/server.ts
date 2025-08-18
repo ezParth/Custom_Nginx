@@ -1,9 +1,10 @@
 import {parseYAMLConfig, validateConfig} from "./config";
-import { ConfigSchemaType } from "./config_schema"
+import { ConfigSchemaType, rootConfigSchema } from "./config_schema"
 import { program } from "commander";
-import cluster from "node:cluster";
+import cluster , { Worker } from "node:cluster";
 import os from "os"
 import http from "http"
+import { workerMessageSchema, workerMessageType } from "./server_schema";
 
 interface createServerConfig {
     port: number
@@ -20,14 +21,49 @@ const createServer = async (config: createServerConfig) => {
 
         for(var i = 0; i<workerCount; i++) {
             cluster.fork({ config: JSON.stringify(config.config) })
-            console.log(`Woker node ${i+1} spinned up`)
+            // console.log(`Woker node ${i+1} spinned up`)
         }
 
-        const server = http.createServer(function (req, res) {
 
+
+        const server = http.createServer(function (req, res) {
+            const index = Math.floor(Math.random() * workerCount)
+            const worker: Worker | undefined = Object.values(cluster.workers ?? [])[index]
+            if(worker == undefined) {
+                console.log('worker is undefined')
+                return;
+            }
+            // console.log('worker: ', worker)
+            var BODY : any = ""
+            req.on('data', (data) => {
+                console.log('data: ', data, " -> ", typeof data)
+                BODY += data
+            })
+            JSON.stringify(BODY)
+
+            const payload: workerMessageType = {
+                requestType: 'HTTP',
+                headers: req.headers,
+                body: BODY || null,
+                url: `${req.url}`
+            }
+
+
+            worker.send(JSON.stringify(payload)) 
+        })
+
+        server.listen(config.port, () => {
+            console.log(`Server is running on port ${config.port}`)
         })
     } else {
-        console.log(`Worker node`, process.env.config)
+        // console.log(`Worker node`, JSON.parse(process.env.config as string))
+
+        const config = await rootConfigSchema.parseAsync(JSON.parse(process.env.config as string))
+        process.on('message', async (msg: string) => {
+            // console.log("worker recieved a message: ", msg)
+            const validatedMessage = await workerMessageSchema.parseAsync(JSON.parse(msg))
+            console.log(validatedMessage)
+        })
     }
 }
 

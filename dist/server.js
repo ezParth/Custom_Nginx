@@ -13,10 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const config_1 = require("./config");
+const config_schema_1 = require("./config_schema");
 const commander_1 = require("commander");
 const node_cluster_1 = __importDefault(require("node:cluster"));
 const os_1 = __importDefault(require("os"));
 const http_1 = __importDefault(require("http"));
+const server_schema_1 = require("./server_schema");
 const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () {
     const { workerCount } = config;
     const workers = new Array(workerCount);
@@ -24,13 +26,43 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
         console.log("Master Process in up!");
         for (var i = 0; i < workerCount; i++) {
             node_cluster_1.default.fork({ config: JSON.stringify(config.config) });
-            console.log(`Woker node ${i + 1} spinned up`);
+            // console.log(`Woker node ${i+1} spinned up`)
         }
         const server = http_1.default.createServer(function (req, res) {
+            var _a;
+            const index = Math.floor(Math.random() * workerCount);
+            const worker = Object.values((_a = node_cluster_1.default.workers) !== null && _a !== void 0 ? _a : [])[index];
+            if (worker == undefined) {
+                console.log('worker is undefined');
+                return;
+            }
+            // console.log('worker: ', worker)
+            var BODY = "";
+            req.on('data', (data) => {
+                console.log('data: ', data, " -> ", typeof data);
+                BODY += data;
+            });
+            JSON.stringify(BODY);
+            const payload = {
+                requestType: 'HTTP',
+                headers: req.headers,
+                body: BODY || null,
+                url: `${req.url}`
+            };
+            worker.send(JSON.stringify(payload));
+        });
+        server.listen(config.port, () => {
+            console.log(`Server is running on port ${config.port}`);
         });
     }
     else {
-        console.log(`Worker node`, process.env.config);
+        // console.log(`Worker node`, JSON.parse(process.env.config as string))
+        const config = yield config_schema_1.rootConfigSchema.parseAsync(JSON.parse(process.env.config));
+        process.on('message', (msg) => __awaiter(void 0, void 0, void 0, function* () {
+            // console.log("worker recieved a message: ", msg)
+            const validatedMessage = yield server_schema_1.workerMessageSchema.parseAsync(JSON.parse(msg));
+            console.log(validatedMessage);
+        }));
     }
 });
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
