@@ -19,11 +19,11 @@ server:
 
   rules:
     - path: /
-      upstrams:
+      upstreams:
         - node1
         - node2
     
     - path: /admin
-      upstram: 
+      upstreams: 
         - node2
     

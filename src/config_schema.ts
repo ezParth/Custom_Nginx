@@ -12,14 +12,14 @@ const headerSchema = z.object({
 
 const ruleSchema = z.object({
     path: z.string(),
-    upstrams: z.array(z.string()),
+    upstreams: z.array(z.string()),
 })
 
 const serverSchema = z.object({
     listen: z.number(), 
     workers: z.number().optional(),
     upstream: z.array(upstreamSchema),
-    headers: z.array(headerSchema).optional,
+    headers: z.array(headerSchema).optional(),
     rules: z.array(ruleSchema),
 })
 

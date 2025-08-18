@@ -12,13 +12,13 @@ const headerSchema = zod_1.z.object({
 });
 const ruleSchema = zod_1.z.object({
     path: zod_1.z.string(),
-    upstrams: zod_1.z.array(zod_1.z.string()),
+    upstreams: zod_1.z.array(zod_1.z.string()),
 });
 const serverSchema = zod_1.z.object({
     listen: zod_1.z.number(),
     workers: zod_1.z.number().optional(),
     upstream: zod_1.z.array(upstreamSchema),
-    headers: zod_1.z.array(headerSchema).optional,
+    headers: zod_1.z.array(headerSchema).optional(),
     rules: zod_1.z.array(ruleSchema),
 });
 exports.rootConfigSchema = zod_1.z.object({
