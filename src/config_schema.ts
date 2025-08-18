@@ -14,7 +14,7 @@ const ruleSchema = z.object({
     path: z.string(),
     upstreams: z.array(z.string()),
 })
-
+ 
 const serverSchema = z.object({
     listen: z.number(), 
     workers: z.number().optional(),
@@ -26,3 +26,5 @@ const serverSchema = z.object({
 export const rootConfigSchema = z.object({
     server: serverSchema
 })
+
+export type ConfigSchemaType = z.infer<typeof rootConfigSchema>;

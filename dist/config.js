@@ -19,7 +19,7 @@ const config_schema_1 = require("./config_schema");
 const parseYAMLConfig = (filepath) => __awaiter(void 0, void 0, void 0, function* () {
     const data = yield promises_1.default.readFile(filepath, "utf-8");
     const result = (0, yaml_1.parse)(data);
-    console.log("result: ", result);
+    // console.log("result: ", result)
     return JSON.stringify(result);
 });
 exports.parseYAMLConfig = parseYAMLConfig;

@@ -5,7 +5,7 @@ import { rootConfigSchema } from "./config_schema";
 const parseYAMLConfig = async (filepath: string) => {
     const data = await fs.readFile(filepath, "utf-8");
     const result = parse(data);
-    console.log("result: ", result)
+    // console.log("result: ", result)
     return JSON.stringify(result);
 };
 

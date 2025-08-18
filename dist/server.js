@@ -16,18 +16,21 @@ const config_1 = require("./config");
 const commander_1 = require("commander");
 const node_cluster_1 = __importDefault(require("node:cluster"));
 const os_1 = __importDefault(require("os"));
+const http_1 = __importDefault(require("http"));
 const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () {
     const { workerCount } = config;
     const workers = new Array(workerCount);
     if (node_cluster_1.default.isPrimary) {
         console.log("Master Process in up!");
         for (var i = 0; i < workerCount; i++) {
-            node_cluster_1.default.fork();
+            node_cluster_1.default.fork({ config: JSON.stringify(config.config) });
             console.log(`Woker node ${i + 1} spinned up`);
         }
+        const server = http_1.default.createServer(function (req, res) {
+        });
     }
     else {
-        console.log(`Worker node`);
+        console.log(`Worker node`, process.env.config);
     }
 });
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -38,7 +41,7 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         const options = commander_1.program.opts();
         if (options && 'config' in options) {
             const validatedConfig = yield (0, config_1.validateConfig)(yield (0, config_1.parseYAMLConfig)(options.config));
-            yield createServer({ port: validatedConfig.server.listen, workerCount: (_a = validatedConfig.server.workers) !== null && _a !== void 0 ? _a : os_1.default.cpus().length });
+            yield createServer({ port: validatedConfig.server.listen, workerCount: (_a = validatedConfig.server.workers) !== null && _a !== void 0 ? _a : os_1.default.cpus().length, config: validatedConfig });
         }
     }
     catch (error) {
