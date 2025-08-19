@@ -31,6 +31,11 @@ const createServer = async (config: createServerConfig) => {
     }
 
     const server = http.createServer((req, res) => {
+        if(req.url == "/") {
+            res.writeHead(302, { Location: 'https://google.com' })
+            res.end()
+            return
+        }
       const index = Math.floor(Math.random() * workerCount);
       const worker: Worker | undefined =
         Object.values(cluster.workers ?? [])[index];
@@ -83,7 +88,7 @@ const createServer = async (config: createServerConfig) => {
     // worker process
     const config = await rootConfigSchema.parseAsync(
       JSON.parse(process.env.config as string)
-    );
+    ); 
 
     process.on("message", async (msg: string) => {
       try {

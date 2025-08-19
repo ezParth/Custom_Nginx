@@ -31,6 +31,11 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
         }
         const server = http_1.default.createServer((req, res) => {
             var _a;
+            if (req.url == "/") {
+                res.writeHead(302, { Location: 'https://google.com' });
+                res.end();
+                return;
+            }
             const index = Math.floor(Math.random() * workerCount);
             const worker = Object.values((_a = node_cluster_1.default.workers) !== null && _a !== void 0 ? _a : [])[index];
             if (!worker) {
