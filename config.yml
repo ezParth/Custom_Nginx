@@ -5,10 +5,10 @@ server:
 
   upstream:
     - id: node1
-      url: http://localhost:8001
+      url: localhost:8001
 
     - id: node2
-      url: http://localhost:8002
+      url: localhost:8002
 
   headers: 
     - key: x-forward-for

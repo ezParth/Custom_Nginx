@@ -50,6 +50,19 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
                 url: `${req.url}`
             };
             worker.send(JSON.stringify(payload));
+            worker.on('message', (workerReply) => __awaiter(this, void 0, void 0, function* () {
+                const reply = yield server_schema_1.workerMessageReplySchema.parseAsync(JSON.parse(workerReply));
+                if (reply.errorCode) {
+                    res.writeHead(parseInt(reply.errorCode));
+                    res.end(reply.error);
+                    return;
+                }
+                else {
+                    res.writeHead(200);
+                    res.end(reply.data);
+                    return;
+                }
+            }));
         });
         server.listen(config.port, () => {
             console.log(`Server is running on port ${config.port}`);

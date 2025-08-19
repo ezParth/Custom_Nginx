@@ -4,7 +4,7 @@ import { program } from "commander";
 import cluster , { Worker } from "node:cluster";
 import os from "os"
 import http from "http"
-import { workerMessageReplyType, workerMessageSchema, workerMessageType } from "./server_schema";
+import { workerMessageReplySchema, workerMessageReplyType, workerMessageSchema, workerMessageType } from "./server_schema";
 
 interface createServerConfig {
     port: number
@@ -50,6 +50,19 @@ const createServer = async (config: createServerConfig) => {
 
 
             worker.send(JSON.stringify(payload)) 
+
+            worker.on('message', async (workerReply: string) => {
+                const reply = await workerMessageReplySchema.parseAsync(JSON.parse(workerReply))
+                 if(reply.errorCode) {
+                    res.writeHead(parseInt(reply.errorCode))
+                    res.end(reply.error)
+                    return
+                 }else {
+                    res.writeHead(200)
+                    res.end(reply.data)
+                    return
+                 }
+            })
         })
 
         server.listen(config.port, () => {
