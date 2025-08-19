@@ -23,109 +23,129 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
     const { workerCount } = config;
     const workers = new Array(workerCount);
     if (node_cluster_1.default.isPrimary) {
-        console.log("Master Process in up!");
-        for (var i = 0; i < workerCount; i++) {
+        console.log("Master Process is up!");
+        for (let i = 0; i < workerCount; i++) {
             node_cluster_1.default.fork({ config: JSON.stringify(config.config) });
-            // console.log(`Woker node ${i+1} spinned up`)
+            console.log(`Worker node ${i + 1} spinned up`);
         }
-        const server = http_1.default.createServer(function (req, res) {
+        const server = http_1.default.createServer((req, res) => {
             var _a;
             const index = Math.floor(Math.random() * workerCount);
             const worker = Object.values((_a = node_cluster_1.default.workers) !== null && _a !== void 0 ? _a : [])[index];
-            if (worker == undefined) {
-                console.log('worker is undefined');
+            if (!worker) {
+                console.log("Worker is undefined");
+                res.writeHead(500);
+                res.end("Internal Server Error: No available worker");
                 return;
             }
-            // console.log('worker: ', worker)
-            var BODY = "";
-            req.on('data', (data) => {
-                console.log('data: ', data, " -> ", typeof data);
-                BODY += data;
-            });
-            JSON.stringify(BODY);
             const payload = {
-                requestType: 'HTTP',
+                requestType: "HTTP",
                 headers: req.headers,
-                body: BODY || null,
-                url: `${req.url}`
+                body: null,
+                url: `${req.url}`,
             };
             worker.send(JSON.stringify(payload));
-            worker.on('message', (workerReply) => __awaiter(this, void 0, void 0, function* () {
-                const reply = yield server_schema_1.workerMessageReplySchema.parseAsync(JSON.parse(workerReply));
-                if (reply.errorCode) {
-                    res.writeHead(parseInt(reply.errorCode));
-                    res.end(reply.error);
-                    return;
+            const onMessage = (workerReply) => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    const reply = yield server_schema_1.workerMessageReplySchema.parseAsync(JSON.parse(workerReply));
+                    if (reply.errorCode) {
+                        res.writeHead(parseInt(reply.errorCode));
+                        res.end(reply.error);
+                    }
+                    else {
+                        res.writeHead(200);
+                        res.end(reply.data);
+                    }
                 }
-                else {
-                    res.writeHead(200);
-                    res.end(reply.data);
-                    return;
+                catch (error) {
+                    console.error("Error parsing worker reply:", error);
+                    res.writeHead(500);
+                    res.end("Internal Server Error");
                 }
-            }));
+                finally {
+                    worker.off("message", onMessage);
+                }
+            });
+            worker.on("message", onMessage);
         });
         server.listen(config.port, () => {
             console.log(`Server is running on port ${config.port}`);
         });
     }
     else {
-        // console.log(`Worker node`, JSON.parse(process.env.config as string))
         const config = yield config_schema_1.rootConfigSchema.parseAsync(JSON.parse(process.env.config));
-        process.on('message', (msg) => __awaiter(void 0, void 0, void 0, function* () {
-            // console.log("worker recieved a message: ", msg)
-            const validatedMessage = yield server_schema_1.workerMessageSchema.parseAsync(JSON.parse(msg));
-            console.log(validatedMessage);
-            const requestUrl = validatedMessage.url;
-            const rule = config.server.rules.find(e => e.path == requestUrl);
-            if (!rule) {
-                const reply = {
-                    errorCode: "404",
-                    error: "Rule not found!"
-                };
-                const errorMessage = "Something is not good here, rule!";
-                if (process.send)
-                    return process.send(JSON.stringify(reply));
-                else
-                    return errorMessage;
-            }
-            const upstreamID = rule.upstreams[0];
-            const upstream = config.server.upstream.find(e => e.id === upstreamID);
-            if (!upstreamID) {
-                const reply = {
-                    errorCode: "500",
-                    error: "upstream not found!"
-                };
-                const errorMessage = "Something is not good here, upstram!";
-                if (process.send)
-                    return process.send(JSON.stringify(reply));
-                else
-                    return errorMessage;
-            }
-            http_1.default.request({ host: upstream === null || upstream === void 0 ? void 0 : upstream.url, path: requestUrl }, (proxyRes) => {
-                let body = '';
-                proxyRes.on('data', (a) => {
-                    body += a;
-                });
-                proxyRes.on('data', () => {
+        process.on("message", (msg) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                const validatedMessage = yield server_schema_1.workerMessageSchema.parseAsync(JSON.parse(msg));
+                const requestUrl = validatedMessage.url;
+                const rule = config.server.rules.find((e) => e.path === requestUrl);
+                if (!rule) {
                     const reply = {
-                        data: body
+                        errorCode: "404",
+                        error: "Rule not found!",
+                    };
+                    if (process.send)
+                        process.send(JSON.stringify(reply));
+                    return;
+                }
+                const upstreamID = rule.upstreams[0];
+                const upstream = config.server.upstream.find((e) => e.id === upstreamID);
+                if (!upstream) {
+                    const reply = {
+                        errorCode: "500",
+                        error: "Upstream not found!",
+                    };
+                    if (process.send)
+                        process.send(JSON.stringify(reply));
+                    return;
+                }
+                const proxyReq = http_1.default.request({ host: upstream.url, path: requestUrl }, (proxyRes) => {
+                    let body = "";
+                    proxyRes.on("data", (chunk) => {
+                        body += chunk;
+                    });
+                    proxyRes.on("end", () => {
+                        const reply = { data: body };
+                        if (process.send)
+                            process.send(JSON.stringify(reply));
+                    });
+                });
+                proxyReq.on("error", (err) => {
+                    console.error("Error in proxy request:", err);
+                    const reply = {
+                        errorCode: "500",
+                        error: "Proxy request failed!",
                     };
                     if (process.send)
                         process.send(JSON.stringify(reply));
                 });
-            });
+                proxyReq.end();
+            }
+            catch (error) {
+                console.error("Error in worker message handler:", error);
+                const reply = {
+                    errorCode: "500",
+                    error: "Internal Server Error",
+                };
+                if (process.send)
+                    process.send(JSON.stringify(reply));
+            }
         }));
     }
 });
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        commander_1.program.option('--config <path>');
+        commander_1.program.option("--config <path>");
         commander_1.program.parse();
         const options = commander_1.program.opts();
-        if (options && 'config' in options) {
+        if (options && "config" in options) {
             const validatedConfig = yield (0, config_1.validateConfig)(yield (0, config_1.parseYAMLConfig)(options.config));
-            yield createServer({ port: validatedConfig.server.listen, workerCount: (_a = validatedConfig.server.workers) !== null && _a !== void 0 ? _a : os_1.default.cpus().length, config: validatedConfig });
+            yield createServer({
+                port: validatedConfig.server.listen,
+                workerCount: (_a = validatedConfig.server.workers) !== null && _a !== void 0 ? _a : os_1.default.cpus().length,
+                config: validatedConfig,
+            });
         }
     }
     catch (error) {
