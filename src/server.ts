@@ -22,6 +22,7 @@ const createServer = async (config: createServerConfig) => {
   const workers = new Array(workerCount);
 
   if (cluster.isPrimary) {
+    // master process
     console.log("Master Process is up!");
 
     for (let i = 0; i < workerCount; i++) {
@@ -79,6 +80,7 @@ const createServer = async (config: createServerConfig) => {
       console.log(`Server is running on port ${config.port}`);
     });
   } else {
+    // worker process
     const config = await rootConfigSchema.parseAsync(
       JSON.parse(process.env.config as string)
     );
@@ -115,6 +117,7 @@ const createServer = async (config: createServerConfig) => {
           return;
         }
 
+        console.log("host: ", upstream.url, " path: ", requestUrl)
         const proxyReq = http.request(
           { host: upstream.url, path: requestUrl },
           (proxyRes) => {
@@ -130,6 +133,8 @@ const createServer = async (config: createServerConfig) => {
             });
           }
         );
+
+        console.log("porxyReq: ", proxyReq.host)
 
         proxyReq.on("error", (err) => {
           console.error("Error in proxy request:", err);

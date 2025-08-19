@@ -23,6 +23,7 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
     const { workerCount } = config;
     const workers = new Array(workerCount);
     if (node_cluster_1.default.isPrimary) {
+        // master process
         console.log("Master Process is up!");
         for (let i = 0; i < workerCount; i++) {
             node_cluster_1.default.fork({ config: JSON.stringify(config.config) });
@@ -73,6 +74,7 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
     else {
+        // worker process
         const config = yield config_schema_1.rootConfigSchema.parseAsync(JSON.parse(process.env.config));
         process.on("message", (msg) => __awaiter(void 0, void 0, void 0, function* () {
             try {
@@ -99,6 +101,7 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
                         process.send(JSON.stringify(reply));
                     return;
                 }
+                console.log("host: ", upstream.url, " path: ", requestUrl);
                 const proxyReq = http_1.default.request({ host: upstream.url, path: requestUrl }, (proxyRes) => {
                     let body = "";
                     proxyRes.on("data", (chunk) => {
@@ -110,6 +113,7 @@ const createServer = (config) => __awaiter(void 0, void 0, void 0, function* () 
                             process.send(JSON.stringify(reply));
                     });
                 });
+                console.log("porxyReq: ", proxyReq.host);
                 proxyReq.on("error", (err) => {
                     console.error("Error in proxy request:", err);
                     const reply = {
