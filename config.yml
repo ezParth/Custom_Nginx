@@ -4,13 +4,7 @@ server:
   workers: 4
 
   upstream:
-    - id: todos
-      url: jsonplaceholder.typicode.com
-
-    - id: posts
-      url: jsonplaceholder.typicode.com
-
-    - id: comments
+    - id: jsonplaceholder
       url: jsonplaceholder.typicode.com
 
   headers: 
@@ -23,17 +17,17 @@ server:
   rules:
     - path: /
       upstreams:
-        - todos
+        - jsonplaceholder
     
     - path: /posts
       upstreams: 
-        - posts
+        - jsonplaceholder
 
     - path: /todos
       upstreams:
-        - todos
+        - jsonplaceholder
 
     - path: /comments
       upstreams:
-        - comments
+        - jsonplaceholder
     
